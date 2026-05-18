@@ -58,6 +58,15 @@ const shopController = {
     }
   },
 
+  deleteProduct: async (req, res) => {
+    try {
+      await ShopProduct.findByIdAndDelete(req.params.id);
+      res.json({ success: true, message: 'Đã xoá sản phẩm' });
+    } catch (error) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  },
+
   // ORDERS
   createOrder: async (req, res) => {
     try {

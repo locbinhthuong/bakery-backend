@@ -12,6 +12,7 @@ router.post('/orders', shopController.createOrder);
 router.get('/admin/products', shopController.getAllProductsAdmin);
 router.post('/admin/products', shopController.createProduct);
 router.put('/admin/products/:id', shopController.updateProduct);
+router.delete('/admin/products/:id', shopController.deleteProduct);
 
 // Admin: Upload Image
 router.post('/admin/upload', upload.single('image'), shopController.uploadImage);
