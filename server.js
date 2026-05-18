@@ -5,6 +5,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const http = require('http');
+const path = require('path');
 
 const shopRoutes = require('./routes/shopRoutes');
 
@@ -24,6 +25,9 @@ app.use(helmet({
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files (cho hình ảnh upload)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Request Logging
 app.use((req, res, next) => {

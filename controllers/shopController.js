@@ -5,6 +5,21 @@ const ShopPromo = require('../models/ShopPromo');
 const axios = require('axios');
 
 const shopController = {
+  // UPLOAD
+  uploadImage: async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'Không có file nào được tải lên.' });
+      }
+      // Trả về đường dẫn của file để Frontend lưu vào DB (vd: /uploads/filename.jpg)
+      // Chú ý: Ở môi trường thật nên dùng đường dẫn đầy đủ từ biến môi trường nếu cần, hoặc Frontend ghép vào.
+      const imageUrl = `/uploads/${req.file.filename}`;
+      res.status(200).json({ success: true, url: imageUrl });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
   // PRODUCTS
   getProducts: async (req, res) => {
     try {
