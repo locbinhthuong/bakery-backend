@@ -1,7 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const shopController = require('../controllers/shopController');
+const authController = require('../controllers/authController');
 const upload = require('../middleware/upload');
+const { verifyToken } = require('../middleware/auth');
+
+// Auth Khách hàng
+router.post('/auth/register', authController.register);
+router.post('/auth/login', authController.login);
+router.get('/customer/profile', verifyToken, authController.getProfile);
+router.put('/customer/profile', verifyToken, authController.updateProfile);
+router.delete('/customer/profile', verifyToken, authController.deleteProfile);
 
 // Khách hàng
 router.get('/products', shopController.getProducts);
