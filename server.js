@@ -27,7 +27,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve static files (cho hình ảnh upload)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/shop/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Request Logging
 app.use((req, res, next) => {
