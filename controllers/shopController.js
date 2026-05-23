@@ -21,7 +21,10 @@ const shopController = {
       }
       
       const result = await cloudinary.uploader.upload(image, {
-        folder: 'bakery_uploads'
+        folder: 'bakery_uploads',
+        cloud_name: 'diwioucg8',
+        api_key: '845651236621476',
+        api_secret: 'rDA5YV4xfAym9qKhwTrGagIY8aA'
       });
       
       res.status(200).json({ success: true, url: result.secure_url });
