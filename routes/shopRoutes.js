@@ -15,6 +15,7 @@ router.delete('/customer/profile', verifyToken, authController.deleteProfile);
 // Khách hàng
 router.get('/products', shopController.getProducts);
 router.get('/promos', shopController.getPromos); // Lấy tin tức/khuyến mãi cho khách
+router.post('/promos/validate', shopController.validatePromo);
 router.post('/orders', shopController.createOrder);
 
 // Admin: Product Routes

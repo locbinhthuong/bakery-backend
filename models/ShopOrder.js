@@ -11,6 +11,9 @@ const shopOrderSchema = new mongoose.Schema({
     price: Number,
     quantity: Number
   }],
+  subTotal: { type: Number, required: true },
+  discountCode: { type: String, default: '' },
+  discountAmount: { type: Number, default: 0 },
   totalAmount: { type: Number, required: true },
   status: {
     type: String,

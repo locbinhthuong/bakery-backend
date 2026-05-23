@@ -84,7 +84,16 @@ const shopController = {
   // ORDERS
   createOrder: async (req, res) => {
     try {
-      const order = new ShopOrder(req.body);
+      const {
+        customerName, customerPhone, deliveryAddress, note, items,
+        subTotal, discountCode, discountAmount, totalAmount
+      } = req.body;
+
+      const order = new ShopOrder({
+        customerName, customerPhone, deliveryAddress, note, items,
+        subTotal: subTotal || totalAmount, // Tương thích ngược
+        discountCode, discountAmount, totalAmount
+      });
       await order.save();
 
       // Lưu lại thông tin khách hàng hoặc cập nhật lịch sử mua
@@ -223,6 +232,41 @@ const shopController = {
       res.json({ success: true, message: 'Đã xoá tin tức/khuyến mãi' });
     } catch (error) {
       res.status(400).json({ success: false, message: error.message });
+    }
+  },
+
+  validatePromo: async (req, res) => {
+    try {
+      const { code, totalAmount } = req.body;
+      if (!code) return res.status(400).json({ success: false, message: 'Vui lòng nhập mã giảm giá' });
+
+      const promo = await ShopPromo.findOne({ code, isActive: true });
+      if (!promo) {
+        return res.status(404).json({ success: false, message: 'Mã giảm giá không tồn tại hoặc đã hết hạn' });
+      }
+
+      let discountAmount = 0;
+      if (promo.discountType === 'PERCENT') {
+        discountAmount = (totalAmount * promo.discountValue) / 100;
+      } else if (promo.discountType === 'FIXED') {
+        discountAmount = promo.discountValue;
+      } else {
+        return res.status(400).json({ success: false, message: 'Mã giảm giá không hợp lệ' });
+      }
+
+      // Không giảm giá vượt quá tổng tiền
+      if (discountAmount > totalAmount) discountAmount = totalAmount;
+
+      res.json({
+        success: true,
+        data: {
+          code: promo.code,
+          discountAmount,
+          title: promo.title
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
     }
   }
 };
