@@ -32,7 +32,11 @@ router.put('/admin/categories/:id', shopController.updateCategory);
 router.delete('/admin/categories/:id', shopController.deleteCategory);
 
 // Admin: Upload Image
-router.post('/admin/upload', shopController.uploadImage);
+router.post('/upload', shopController.uploadImage);
+
+// SETTINGS
+router.get('/settings', shopController.getSettings);
+router.put('/admin/settings', shopController.updateSettings);
 
 router.get('/admin/orders', shopController.getOrdersAdmin);
 router.put('/admin/orders/:id/confirm', shopController.confirmOrder);

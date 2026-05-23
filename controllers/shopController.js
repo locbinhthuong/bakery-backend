@@ -3,7 +3,23 @@ const ShopOrder = require('../models/ShopOrder');
 const ShopCustomer = require('../models/ShopCustomer');
 const ShopPromo = require('../models/ShopPromo');
 const ShopCategory = require('../models/ShopCategory');
+const ShopSettings = require('../models/ShopSettings');
 const axios = require('axios');
+
+// Haversine formula to calculate distance in km
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
+  const R = 6371; // Radius of the earth in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);  
+  const dLon = (lon2 - lon1) * (Math.PI / 180); 
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+    Math.sin(dLon / 2) * Math.sin(dLon / 2); 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); 
+  const distance = R * c; 
+  return distance;
+}
 
 const cloudinary = require('cloudinary').v2;
 cloudinary.config({
@@ -32,6 +48,35 @@ const shopController = {
     } catch (error) {
       console.error('Lỗi Upload Cloudinary:', error);
       res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  // SETTINGS
+  getSettings: async (req, res) => {
+    try {
+      let settings = await ShopSettings.findOne();
+      if (!settings) {
+        settings = new ShopSettings();
+        await settings.save();
+      }
+      res.json({ success: true, data: settings });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  updateSettings: async (req, res) => {
+    try {
+      let settings = await ShopSettings.findOne();
+      if (!settings) {
+        settings = new ShopSettings(req.body);
+      } else {
+        Object.assign(settings, req.body);
+      }
+      await settings.save();
+      res.json({ success: true, data: settings });
+    } catch (error) {
+      res.status(400).json({ success: false, message: error.message });
     }
   },
 
@@ -87,13 +132,47 @@ const shopController = {
     try {
       const {
         customerName, customerPhone, deliveryAddress, note, items,
-        subTotal, discountCode, discountAmount, totalAmount
+        subTotal, discountCode, discountAmount, totalAmount, customerLocation
       } = req.body;
+
+      // Calculate Shipping Fee if customerLocation is provided
+      let finalShippingFee = 0;
+      let finalDistanceKm = 0;
+      
+      let settings = await ShopSettings.findOne();
+      if (!settings) settings = new ShopSettings();
+
+      if (customerLocation && customerLocation.lat && customerLocation.lng) {
+        finalDistanceKm = calculateDistance(
+          settings.storeLocation.lat, settings.storeLocation.lng,
+          customerLocation.lat, customerLocation.lng
+        );
+        
+        if (finalDistanceKm > settings.maxDeliveryKm) {
+          return res.status(400).json({ success: false, message: `Xin lỗi, cửa hàng chỉ giao trong bán kính ${settings.maxDeliveryKm}km. Bạn đang ở cách ${finalDistanceKm.toFixed(1)}km.` });
+        }
+
+        // Calculate fee
+        if (finalDistanceKm <= settings.shippingBaseKm) {
+          finalShippingFee = settings.shippingBaseFee;
+        } else {
+          const extraKm = finalDistanceKm - settings.shippingBaseKm;
+          finalShippingFee = settings.shippingBaseFee + (extraKm * settings.shippingExtraFeePerKm);
+        }
+      }
+
+      // We should re-verify totalAmount securely, but for now we trust or add the shipping fee calculated
+      // Actually frontend already sends totalAmount, let's just use it or recalculate
+      const calculatedTotalAmount = (subTotal || totalAmount) - (discountAmount || 0) + finalShippingFee;
 
       const order = new ShopOrder({
         customerName, customerPhone, deliveryAddress, note, items,
-        subTotal: subTotal || totalAmount, // Tương thích ngược
-        discountCode, discountAmount, totalAmount
+        customerLocation,
+        subTotal: subTotal || totalAmount, 
+        discountCode, discountAmount, 
+        shippingFee: finalShippingFee,
+        distanceKm: finalDistanceKm,
+        totalAmount: calculatedTotalAmount
       });
       await order.save();
 
