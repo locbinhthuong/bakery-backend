@@ -244,16 +244,20 @@ const shopController = {
           codAmount: order.totalAmount // Thu hộ tổng tiền đơn hàng (Đã bao gồm tiền ship nếu bạn cộng ở Bakery App)
         };
 
-        const ALOSHIPP_API = process.env.ALOSHIPP_API_URL || 'http://localhost:5000/api/orders/integration';
+        const ALOSHIPP_API = process.env.ALOSHIPP_API_URL || 'https://api.aloshipp.com/api/orders/integration';
         
         // Gọi API Integration của AloShip
-        const response = await axios.post(ALOSHIPP_API, aloshippPayload);
+        const response = await axios.post(ALOSHIPP_API, aloshippPayload, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
         console.log('AloShipp Response:', response.data);
         
         // Tùy chọn: Lưu lại mã đơn hàng bên AloShipp vào Bakery order
         if (response.data && response.data.data) {
           order.status = 'CONFIRMED';
-          // Nếu bạn cần lưu orderId của AloShipp: order.aloShippOrderId = response.data.data.orderId;
+          // order.aloShippOrderId = response.data.data.orderId;
         }
 
       } catch (err) {
