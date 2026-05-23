@@ -2,6 +2,7 @@ const ShopProduct = require('../models/ShopProduct');
 const ShopOrder = require('../models/ShopOrder');
 const ShopCustomer = require('../models/ShopCustomer');
 const ShopPromo = require('../models/ShopPromo');
+const ShopCategory = require('../models/ShopCategory');
 const axios = require('axios');
 
 const cloudinary = require('cloudinary').v2;
@@ -267,6 +268,54 @@ const shopController = {
       });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  // CATEGORIES
+  getCategories: async (req, res) => {
+    try {
+      const categories = await ShopCategory.find({ isActive: true }).sort({ order: 1 });
+      res.json({ success: true, data: categories });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+  createCategory: async (req, res) => {
+    try {
+      const category = new ShopCategory(req.body);
+      await category.save();
+      res.status(201).json({ success: true, data: category });
+    } catch (error) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  },
+  updateCategory: async (req, res) => {
+    try {
+      const category = await ShopCategory.findByIdAndUpdate(req.params.id, req.body, { new: true });
+      res.json({ success: true, data: category });
+    } catch (error) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  },
+  deleteCategory: async (req, res) => {
+    try {
+      await ShopCategory.findByIdAndDelete(req.params.id);
+      res.json({ success: true, message: 'Đã xoá bộ lọc' });
+    } catch (error) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  },
+  
+  // Update Best Seller status
+  toggleBestSeller: async (req, res) => {
+    try {
+      const product = await ShopProduct.findById(req.params.id);
+      if (!product) return res.status(404).json({ success: false, message: 'Not found' });
+      product.isBestSeller = req.body.isBestSeller;
+      await product.save();
+      res.json({ success: true, data: product });
+    } catch (error) {
+      res.status(400).json({ success: false, message: error.message });
     }
   }
 };

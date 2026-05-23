@@ -23,6 +23,13 @@ router.get('/admin/products', shopController.getAllProductsAdmin);
 router.post('/admin/products', shopController.createProduct);
 router.put('/admin/products/:id', shopController.updateProduct);
 router.delete('/admin/products/:id', shopController.deleteProduct);
+router.put('/admin/products/:id/bestseller', shopController.toggleBestSeller);
+
+// Admin: Categories
+router.get('/categories', shopController.getCategories); // Public route
+router.post('/admin/categories', shopController.createCategory);
+router.put('/admin/categories/:id', shopController.updateCategory);
+router.delete('/admin/categories/:id', shopController.deleteCategory);
 
 // Admin: Upload Image
 router.post('/admin/upload', shopController.uploadImage);
