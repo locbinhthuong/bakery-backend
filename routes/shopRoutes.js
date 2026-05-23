@@ -17,6 +17,7 @@ router.get('/products', shopController.getProducts);
 router.get('/promos', shopController.getPromos); // Lấy tin tức/khuyến mãi cho khách
 router.post('/promos/validate', shopController.validatePromo);
 router.post('/orders', shopController.createOrder);
+router.get('/customer/orders/:phone', shopController.getCustomerOrders);
 
 // Admin: Product Routes
 router.get('/admin/products', shopController.getAllProductsAdmin);

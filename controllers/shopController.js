@@ -199,6 +199,18 @@ const shopController = {
     }
   },
 
+  getCustomerOrders: async (req, res) => {
+    try {
+      const phone = req.params.phone;
+      if (!phone) return res.status(400).json({ success: false, message: 'Thiếu số điện thoại' });
+      
+      const orders = await ShopOrder.find({ customerPhone: phone }).sort({ createdAt: -1 });
+      res.json({ success: true, data: orders });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
   getOrdersAdmin: async (req, res) => {
     try {
       const orders = await ShopOrder.find().sort({ createdAt: -1 });
