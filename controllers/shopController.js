@@ -4,17 +4,29 @@ const ShopCustomer = require('../models/ShopCustomer');
 const ShopPromo = require('../models/ShopPromo');
 const axios = require('axios');
 
+const cloudinary = require('cloudinary').v2;
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
 const shopController = {
   // UPLOAD
   uploadImage: async (req, res) => {
     try {
-      if (!req.file) {
-        return res.status(400).json({ success: false, message: 'Không có file nào được tải lên.' });
+      const { image } = req.body; // base64 string
+      if (!image) {
+        return res.status(400).json({ success: false, message: 'Không có dữ liệu ảnh.' });
       }
-      // Trả về đường dẫn của file (URL từ Cloudinary) để Frontend lưu vào DB
-      const imageUrl = req.file.path;
-      res.status(200).json({ success: true, url: imageUrl });
+      
+      const result = await cloudinary.uploader.upload(image, {
+        folder: 'bakery_uploads'
+      });
+      
+      res.status(200).json({ success: true, url: result.secure_url });
     } catch (error) {
+      console.error('Lỗi Upload Cloudinary:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   },
