@@ -139,31 +139,31 @@ const shopController = {
       let finalShippingFee = 0;
       let finalDistanceKm = 0;
       
-      let settings = await ShopSettings.findOne();
-      if (!settings) settings = new ShopSettings();
 
-      if (customerLocation && customerLocation.lat && customerLocation.lng) {
-        finalDistanceKm = calculateDistance(
-          settings.storeLocation.lat, settings.storeLocation.lng,
-          customerLocation.lat, customerLocation.lng
-        );
+      // Tính khoảng cách để check maxDeliveryKm
+      if (settings && customerLocation && settings.storeLocation) {
+        const lat1 = settings.storeLocation.lat;
+        const lon1 = settings.storeLocation.lng;
+        const lat2 = customerLocation.lat;
+        const lon2 = customerLocation.lng;
+        
+        const R = 6371; // Radius of the earth in km
+        const dLat = (lat2 - lat1) * (Math.PI / 180);
+        const dLon = (lon2 - lon1) * (Math.PI / 180);
+        const a = 
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+          Math.sin(dLon / 2) * Math.sin(dLon / 2); 
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); 
+        finalDistanceKm = R * c; 
         
         if (finalDistanceKm > settings.maxDeliveryKm) {
           return res.status(400).json({ success: false, message: `Xin lỗi, cửa hàng chỉ giao trong bán kính ${settings.maxDeliveryKm}km. Bạn đang ở cách ${finalDistanceKm.toFixed(1)}km.` });
         }
-
-        // Calculate fee
-        if (finalDistanceKm <= settings.shippingBaseKm) {
-          finalShippingFee = settings.shippingBaseFee;
-        } else {
-          const extraKm = finalDistanceKm - settings.shippingBaseKm;
-          finalShippingFee = settings.shippingBaseFee + (extraKm * settings.shippingExtraFeePerKm);
-        }
+        // Phí ship sẽ do AloShipp tính và báo sau. App bán bánh không thu phí ship.
       }
 
-      // We should re-verify totalAmount securely, but for now we trust or add the shipping fee calculated
-      // Actually frontend already sends totalAmount, let's just use it or recalculate
-      const calculatedTotalAmount = (subTotal || totalAmount) - (discountAmount || 0) + finalShippingFee;
+      const calculatedTotalAmount = (subTotal || totalAmount) - (discountAmount || 0);
 
       const order = new ShopOrder({
         customerName, customerPhone, deliveryAddress, note, items,
