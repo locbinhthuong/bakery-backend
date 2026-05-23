@@ -220,39 +220,50 @@ const shopController = {
 
       order.status = 'CONFIRMED';
       
+      // Lấy thông tin tọa độ quán từ ShopSettings
+      let settings = await ShopSettings.findOne();
+      if (!settings) settings = new ShopSettings();
+
       // Đẩy sang AloShipp
       try {
         const aloshippPayload = {
-          serviceType: 'GIAO_HANG',
           customerName: order.customerName,
           customerPhone: order.customerPhone,
-          pickupAddress: 'Cửa hàng Bánh Bakery (Địa chỉ mặc định)', // Có thể cấu hình sau
+          pickupAddress: 'Cửa hàng Bánh Bakery', // Có thể thêm trường này vào settings sau
+          pickupCoordinates: {
+            lat: settings.storeLocation.lat,
+            lng: settings.storeLocation.lng
+          },
           deliveryAddress: order.deliveryAddress,
-          codAmount: order.totalAmount, // Thu hộ bằng tổng tiền bánh
+          deliveryCoordinates: {
+            lat: order.customerLocation?.lat || 10.776889,
+            lng: order.customerLocation?.lng || 106.700806
+          },
+          items: order.items.map(i => `${i.quantity} ${i.name}`),
           note: order.note + ' (Đơn từ Bakery App)',
-          items: order.items.map(i => `${i.name} (x${i.quantity})`),
-          senderName: 'Bakery Shop',
-          senderPhone: '0900000000'
+          codAmount: order.totalAmount // Thu hộ tổng tiền đơn hàng (Đã bao gồm tiền ship nếu bạn cộng ở Bakery App)
         };
 
-        const ALOSHIPP_API = process.env.ALOSHIPP_API_URL || 'http://localhost:5000/api/orders/customer';
+        const ALOSHIPP_API = process.env.ALOSHIPP_API_URL || 'http://localhost:5000/api/orders/integration';
         
-        // Vì API /api/orders/customer của AloShipp yêu cầu verifyToken (authMiddleware)
-        // Chúng ta có thể phải tạo 1 endpoint riêng bên AloShipp cho Merchant hoặc bypass.
-        // Tạm thời gửi request. Nếu lỗi auth, sẽ báo lỗi để setup lại bên AloShipp.
-        // => Ghi chú: Cần tạo 1 tài khoản User vai trò SHOP bên AloShipp lấy token gắn vào đây.
+        // Gọi API Integration của AloShip
+        const response = await axios.post(ALOSHIPP_API, aloshippPayload);
+        console.log('AloShipp Response:', response.data);
         
-        // Mock success for now, in reality needs a valid token:
-        // const response = await axios.post(ALOSHIPP_API, aloshippPayload, { headers: { Authorization: `Bearer ${SHOP_TOKEN}` } });
-        // order.aloShippOrderId = response.data.data._id;
-        
+        // Tùy chọn: Lưu lại mã đơn hàng bên AloShipp vào Bakery order
+        if (response.data && response.data.data) {
+          order.status = 'CONFIRMED';
+          // Nếu bạn cần lưu orderId của AloShipp: order.aloShippOrderId = response.data.data.orderId;
+        }
+
       } catch (err) {
-        console.error('Lỗi đẩy sang AloShipp:', err.message);
-        // Tạm thời vẫn cho pass để test nội bộ Bakery
+        console.error('Lỗi đẩy sang AloShipp:', err.response?.data || err.message);
+        // Nếu muốn chặn không cho Confirm nếu AloShipp lỗi thì Uncomment dòng dưới:
+        // return res.status(400).json({ success: false, message: 'Lỗi từ AloShipp: ' + (err.response?.data?.message || err.message) });
       }
 
       await order.save();
-      res.json({ success: true, data: order, message: 'Đã xác nhận và đẩy đơn sang AloShipp (Mock)' });
+      res.json({ success: true, data: order, message: 'Đã xác nhận và đẩy đơn sang AloShipp' });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
