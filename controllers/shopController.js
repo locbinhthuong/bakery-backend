@@ -6,9 +6,9 @@ const axios = require('axios');
 
 const cloudinary = require('cloudinary').v2;
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
+  cloud_name: 'diwioucg8',
+  api_key: '845651236621476',
+  api_secret: 'rDA5YV4xfAym9qKhwTrGagIY8aA'
 });
 
 const shopController = {
