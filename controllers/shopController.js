@@ -11,8 +11,8 @@ const shopController = {
       if (!req.file) {
         return res.status(400).json({ success: false, message: 'Không có file nào được tải lên.' });
       }
-      // Trả về đường dẫn của file để Frontend lưu vào DB
-      const imageUrl = `/api/shop/uploads/${req.file.filename}`;
+      // Trả về đường dẫn của file (URL từ Cloudinary) để Frontend lưu vào DB
+      const imageUrl = req.file.path;
       res.status(200).json({ success: true, url: imageUrl });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });

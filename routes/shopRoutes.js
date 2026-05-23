@@ -27,7 +27,7 @@ router.delete('/admin/products/:id', shopController.deleteProduct);
 router.post('/admin/upload', upload.single('image'), shopController.uploadImage);
 
 router.get('/admin/orders', shopController.getOrdersAdmin);
-router.post('/admin/orders/:id/confirm', shopController.confirmOrder);
+router.put('/admin/orders/:id/confirm', shopController.confirmOrder);
 
 // Admin: Promo Routes
 router.get('/admin/promos', shopController.getPromosAdmin);
