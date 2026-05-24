@@ -42,6 +42,7 @@ router.put('/admin/settings', shopController.updateSettings);
 router.get('/admin/orders', shopController.getOrdersAdmin);
 router.put('/admin/orders/:id/confirm', shopController.confirmOrder);
 router.post('/admin/orders/:id/cancel', shopController.cancelOrderAdmin);
+router.post('/admin/orders/:id/complete', shopController.completeOrderAdmin); // Dành cho đơn PICKUP
 router.post('/orders/webhook', shopController.updateOrderStatusWebhook); // Nhận từ AloShipp
 
 // Admin: Promo Routes

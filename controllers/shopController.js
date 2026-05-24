@@ -133,17 +133,22 @@ const shopController = {
       const {
         customerName, customerPhone, deliveryAddress, note, items,
         subTotal, discountCode, discountAmount, totalAmount, customerLocation,
-        shippingFee, distanceKm
+        shippingFee, distanceKm, deliveryMethod, pickupTime
       } = req.body;
 
-      const safeShippingFee = shippingFee || 0;
-      const safeDistanceKm = distanceKm || 0;
+      const isPickup = deliveryMethod === 'PICKUP';
+      const safeShippingFee = isPickup ? 0 : (shippingFee || 0);
+      const safeDistanceKm = isPickup ? 0 : (distanceKm || 0);
 
       const calculatedTotalAmount = (subTotal || totalAmount) - (discountAmount || 0) + safeShippingFee;
 
       const order = new ShopOrder({
-        customerName, customerPhone, deliveryAddress, note, items,
-        customerLocation,
+        customerName, customerPhone, 
+        deliveryAddress: isPickup ? '' : deliveryAddress, 
+        deliveryMethod: isPickup ? 'PICKUP' : 'DELIVERY',
+        pickupTime: isPickup ? pickupTime : null,
+        note, items,
+        customerLocation: isPickup ? null : customerLocation,
         subTotal: subTotal || totalAmount, 
         discountCode, discountAmount, 
         shippingFee: safeShippingFee,
@@ -217,6 +222,12 @@ const shopController = {
 
       order.status = 'CONFIRMED';
       
+      // Nếu là đơn lấy tại quán thì KHÔNG gọi AloShipp
+      if (order.deliveryMethod === 'PICKUP') {
+        await order.save();
+        return res.json({ success: true, data: order, message: 'Đã xác nhận đơn khách đến lấy' });
+      }
+
       // Lấy thông tin tọa độ quán từ ShopSettings
       let settings = await ShopSettings.findOne();
       if (!settings) settings = new ShopSettings();
@@ -253,7 +264,6 @@ const shopController = {
         console.log('AloShipp Response:', response.data);
         
         if (response.data && response.data.data) {
-          order.status = 'CONFIRMED';
           order.aloShippOrderId = response.data.data.orderId;
         }
 
@@ -297,8 +307,8 @@ const shopController = {
 
       if (!order) return res.status(404).json({ success: false, message: 'Không tìm thấy đơn' });
 
-      // Nếu đơn chưa đẩy qua AloShipp thì hủy luôn trên Bakery App
-      if (order.status === 'PENDING') {
+      // Nếu đơn chưa đẩy qua AloShipp (hoặc đơn PICKUP) thì hủy luôn trên Bakery App
+      if (order.status === 'PENDING' || (order.deliveryMethod === 'PICKUP' && order.status === 'CONFIRMED')) {
         order.status = 'CANCELLED';
         await order.save();
         return res.json({ success: true, message: 'Đã hủy đơn thành công' });
@@ -320,6 +330,25 @@ const shopController = {
       }
 
       return res.status(400).json({ success: false, message: 'Đơn hàng đã được tài xế nhận hoặc đang giao, không thể hủy' });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  // Admin Hoàn Thành Đơn PICKUP
+  completeOrderAdmin: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const order = await ShopOrder.findById(id);
+
+      if (!order) return res.status(404).json({ success: false, message: 'Không tìm thấy đơn' });
+      if (order.deliveryMethod !== 'PICKUP') {
+        return res.status(400).json({ success: false, message: 'Chỉ hỗ trợ hoàn thành tay cho đơn ĐẾN LẤY' });
+      }
+      
+      order.status = 'COMPLETED';
+      await order.save();
+      return res.json({ success: true, message: 'Đã giao bánh cho khách thành công', data: order });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }

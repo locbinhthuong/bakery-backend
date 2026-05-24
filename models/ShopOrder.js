@@ -3,7 +3,9 @@ const mongoose = require('mongoose');
 const shopOrderSchema = new mongoose.Schema({
   customerName: { type: String, required: true },
   customerPhone: { type: String, required: true },
-  deliveryAddress: { type: String, required: true },
+  deliveryMethod: { type: String, enum: ['DELIVERY', 'PICKUP'], default: 'DELIVERY' },
+  pickupTime: { type: String, default: null }, // Có thể lưu chuỗi ngày giờ
+  deliveryAddress: { type: String, default: '' },
   customerLocation: {
     lat: { type: Number },
     lng: { type: Number }
