@@ -14,7 +14,22 @@ exports.register = async (req, res) => {
 
     const existingCustomer = await ShopCustomer.findOne({ phone });
     if (existingCustomer) {
-      return res.status(400).json({ success: false, message: 'Số điện thoại này đã được đăng ký' });
+      if (existingCustomer.password) {
+        return res.status(400).json({ success: false, message: 'Số điện thoại này đã được đăng ký' });
+      } else {
+        const salt = await bcrypt.genSalt(10);
+        existingCustomer.password = await bcrypt.hash(password, salt);
+        existingCustomer.name = name;
+        if (address) existingCustomer.address = address;
+        if (location) existingCustomer.location = location;
+        await existingCustomer.save();
+        const token = jwt.sign({ id: existingCustomer._id }, JWT_SECRET, { expiresIn: '30d' });
+        return res.status(201).json({
+          success: true,
+          message: 'Đăng ký thành công',
+          data: { token, customer: { _id: existingCustomer._id, name: existingCustomer.name, phone: existingCustomer.phone, address: existingCustomer.address, location: existingCustomer.location } }
+        });
+      }
     }
 
     const salt = await bcrypt.genSalt(10);

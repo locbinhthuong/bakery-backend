@@ -12,10 +12,7 @@ const app = express();
 
 // CORS cho Frontend Bakery App
 app.use(cors({
-  origin: function (origin, callback) {
-    callback(null, true); // Chấp nhận mọi origin
-  },
-  credentials: true
+  origin: '*'
 }));
 
 app.use(helmet({ 

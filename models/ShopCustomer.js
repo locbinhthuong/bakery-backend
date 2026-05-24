@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const shopCustomerSchema = new mongoose.Schema({
   name: { type: String, required: true },
   phone: { type: String, required: true, unique: true },
-  password: { type: String, required: true }, // Mật khẩu mã hóa
+  password: { type: String }, // Mật khẩu mã hóa (không bắt buộc vì khách có thể mua vãng lai)
   address: { type: String },
   location: {
     lat: { type: Number },
