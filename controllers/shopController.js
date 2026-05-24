@@ -164,11 +164,11 @@ const shopController = {
           phone: req.body.customerPhone,
           address: req.body.deliveryAddress,
           totalOrders: 1,
-          totalSpent: req.body.totalAmount
+          totalSpent: calculatedTotalAmount
         });
       } else {
         customer.totalOrders += 1;
-        customer.totalSpent += req.body.totalAmount;
+        customer.totalSpent += calculatedTotalAmount;
         if (req.body.deliveryAddress) customer.address = req.body.deliveryAddress;
       }
       await customer.save();
