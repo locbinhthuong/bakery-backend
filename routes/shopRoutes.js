@@ -53,5 +53,8 @@ router.delete('/admin/promos/:id', shopController.deletePromo);
 
 // Admin: Customer Routes
 router.get('/admin/customers', shopController.getCustomersAdmin);
+router.put('/admin/customers/:id', shopController.updateCustomerAdmin);
+router.delete('/admin/customers/:id', shopController.deleteCustomerAdmin);
+router.put('/admin/customers/:id/toggle-block', shopController.toggleBlockCustomerAdmin);
 
 module.exports = router;

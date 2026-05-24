@@ -10,7 +10,8 @@ const shopCustomerSchema = new mongoose.Schema({
     lng: { type: Number }
   }, // Tọa độ GPS
   totalOrders: { type: Number, default: 0 },
-  totalSpent: { type: Number, default: 0 }
+  totalSpent: { type: Number, default: 0 },
+  isBlocked: { type: Boolean, default: false }
 }, { timestamps: true });
 
 module.exports = mongoose.model('ShopCustomer', shopCustomerSchema);

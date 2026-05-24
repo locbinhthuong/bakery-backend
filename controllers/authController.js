@@ -70,6 +70,10 @@ exports.login = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Số điện thoại không tồn tại' });
     }
 
+    if (customer.isBlocked) {
+      return res.status(403).json({ success: false, message: 'Tài khoản của bạn đã bị khóa' });
+    }
+
     const isMatch = await bcrypt.compare(password, customer.password);
     if (!isMatch) {
       return res.status(400).json({ success: false, message: 'Mật khẩu không chính xác' });

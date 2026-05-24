@@ -142,6 +142,12 @@ const shopController = {
 
       const calculatedTotalAmount = (subTotal || totalAmount) - (discountAmount || 0) + safeShippingFee;
 
+      // Check if blocked
+      const existingCustomer = await ShopCustomer.findOne({ phone: customerPhone });
+      if (existingCustomer && existingCustomer.isBlocked) {
+        return res.status(403).json({ success: false, message: 'Số điện thoại này đã bị khóa, không thể đặt hàng.' });
+      }
+
       const order = new ShopOrder({
         customerName, customerPhone, 
         deliveryAddress: isPickup ? '' : deliveryAddress, 
@@ -529,6 +535,59 @@ const shopController = {
       product.isBestSeller = req.body.isBestSeller;
       await product.save();
       res.json({ success: true, data: product });
+    } catch (error) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  },
+
+  // CUSTOMERS ADMIN
+  getCustomersAdmin: async (req, res) => {
+    try {
+      const customers = await ShopCustomer.find().sort({ createdAt: -1 }).select('-password');
+      res.json({ success: true, data: customers });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  updateCustomerAdmin: async (req, res) => {
+    try {
+      const { name, phone, password } = req.body;
+      const customer = await ShopCustomer.findById(req.params.id);
+      if (!customer) return res.status(404).json({ success: false, message: 'Không tìm thấy KH' });
+      
+      if (name) customer.name = name;
+      if (phone) customer.phone = phone;
+      if (password) {
+        const bcrypt = require('bcryptjs');
+        const salt = await bcrypt.genSalt(10);
+        customer.password = await bcrypt.hash(password, salt);
+      }
+      
+      await customer.save();
+      res.json({ success: true, data: customer, message: 'Cập nhật thành công' });
+    } catch (error) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  },
+
+  deleteCustomerAdmin: async (req, res) => {
+    try {
+      await ShopCustomer.findByIdAndDelete(req.params.id);
+      res.json({ success: true, message: 'Đã xoá khách hàng' });
+    } catch (error) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  },
+
+  toggleBlockCustomerAdmin: async (req, res) => {
+    try {
+      const customer = await ShopCustomer.findById(req.params.id);
+      if (!customer) return res.status(404).json({ success: false, message: 'Không tìm thấy KH' });
+      
+      customer.isBlocked = !customer.isBlocked;
+      await customer.save();
+      res.json({ success: true, data: customer, message: customer.isBlocked ? 'Đã khóa tài khoản' : 'Đã mở khóa tài khoản' });
     } catch (error) {
       res.status(400).json({ success: false, message: error.message });
     }
