@@ -23,7 +23,7 @@ const shopOrderSchema = new mongoose.Schema({
   totalAmount: { type: Number, required: true },
   status: {
     type: String,
-    enum: ['PENDING', 'CONFIRMED', 'CANCELLED', 'DELIVERED'],
+    enum: ['PENDING', 'CONFIRMED', 'ACCEPTED', 'PICKED_UP', 'DELIVERING', 'COMPLETED', 'CANCELLED', 'DELIVERED'],
     default: 'PENDING'
   },
   aloShippOrderId: { type: String, default: null } // Mã đơn bên AloShipp khi đẩy qua

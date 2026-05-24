@@ -238,7 +238,8 @@ const shopController = {
           },
           items: order.items.map(i => `${i.quantity} ${i.name}`),
           note: order.note + ' (Đơn từ Bakery App)',
-          codAmount: order.totalAmount // Thu hộ tổng tiền đơn hàng (Đã bao gồm tiền ship nếu bạn cộng ở Bakery App)
+          codAmount: order.totalAmount, // Thu hộ tổng tiền đơn hàng
+          bakeryOrderId: order._id.toString()
         };
 
         const ALOSHIPP_API = process.env.ALOSHIPP_API_URL || 'https://api.aloshipp.com/api/orders/integration';
@@ -251,20 +252,74 @@ const shopController = {
         });
         console.log('AloShipp Response:', response.data);
         
-        // Tùy chọn: Lưu lại mã đơn hàng bên AloShipp vào Bakery order
         if (response.data && response.data.data) {
           order.status = 'CONFIRMED';
-          // order.aloShippOrderId = response.data.data.orderId;
+          order.aloShippOrderId = response.data.data.orderId;
         }
 
       } catch (err) {
         console.error('Lỗi đẩy sang AloShipp:', err.response?.data || err.message);
-        // Nếu muốn chặn không cho Confirm nếu AloShipp lỗi thì Uncomment dòng dưới:
-        // return res.status(400).json({ success: false, message: 'Lỗi từ AloShipp: ' + (err.response?.data?.message || err.message) });
+        return res.status(400).json({ success: false, message: 'Lỗi từ AloShipp: ' + (err.response?.data?.message || err.message) });
       }
 
       await order.save();
       res.json({ success: true, data: order, message: 'Đã xác nhận và đẩy đơn sang AloShipp' });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  // Webhook nhận trạng thái từ AloShipp
+  updateOrderStatusWebhook: async (req, res) => {
+    try {
+      const { aloShippOrderId, status } = req.body;
+      if (!aloShippOrderId || !status) {
+        return res.status(400).json({ success: false, message: 'Thiếu thông tin' });
+      }
+
+      const order = await ShopOrder.findOneAndUpdate(
+        { aloShippOrderId },
+        { status },
+        { new: true }
+      );
+
+      res.json({ success: true, message: 'Đã cập nhật trạng thái', data: order });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  // Admin Hủy Đơn
+  cancelOrderAdmin: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const order = await ShopOrder.findById(id);
+
+      if (!order) return res.status(404).json({ success: false, message: 'Không tìm thấy đơn' });
+
+      // Nếu đơn chưa đẩy qua AloShipp thì hủy luôn trên Bakery App
+      if (order.status === 'PENDING') {
+        order.status = 'CANCELLED';
+        await order.save();
+        return res.json({ success: true, message: 'Đã hủy đơn thành công' });
+      }
+
+      // Nếu đã đẩy sang AloShipp (CONFIRMED) thì gọi API AloShipp để xin hủy
+      if (order.status === 'CONFIRMED' && order.aloShippOrderId) {
+        try {
+          const ALOSHIPP_API = process.env.ALOSHIPP_API_URL || 'https://api.aloshipp.com/api/orders/integration';
+          await axios.post(`${ALOSHIPP_API}/${order.aloShippOrderId}/cancel`);
+          
+          order.status = 'CANCELLED';
+          await order.save();
+          return res.json({ success: true, message: 'Đã hủy đơn bên vận chuyển thành công' });
+        } catch (err) {
+          console.error('Lỗi khi hủy đơn bên AloShipp:', err.response?.data || err.message);
+          return res.status(400).json({ success: false, message: 'Không thể hủy: ' + (err.response?.data?.message || err.message) });
+        }
+      }
+
+      return res.status(400).json({ success: false, message: 'Đơn hàng đã được tài xế nhận hoặc đang giao, không thể hủy' });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
