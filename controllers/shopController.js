@@ -166,8 +166,16 @@ const shopController = {
         customer.totalOrders += 1;
         customer.totalSpent += calculatedTotalAmount;
         if (req.body.deliveryAddress) customer.address = req.body.deliveryAddress;
-      }
       await customer.save();
+
+      // Nâng cấp: Cập nhật lượt sử dụng mã giảm giá
+      if (discountCode) {
+        await ShopPromo.findOneAndUpdate(
+          { code: discountCode },
+          { $inc: { totalUsed: 1 } }
+        );
+      }
+
       // TODO: Có thể bắn Socket về Admin Bánh ở đây nếu cần realtime
       res.status(201).json({ success: true, data: order });
     } catch (error) {
@@ -320,12 +328,49 @@ const shopController = {
 
   validatePromo: async (req, res) => {
     try {
-      const { code, totalAmount } = req.body;
+      const { code, totalAmount, customerPhone } = req.body;
       if (!code) return res.status(400).json({ success: false, message: 'Vui lòng nhập mã giảm giá' });
 
       const promo = await ShopPromo.findOne({ code, isActive: true });
       if (!promo) {
-        return res.status(404).json({ success: false, message: 'Mã giảm giá không tồn tại hoặc đã hết hạn' });
+        return res.status(404).json({ success: false, message: 'Mã giảm giá không tồn tại hoặc đã bị khóa' });
+      }
+
+      // 1. Kiểm tra Ngày/Giờ
+      const now = new Date();
+      if (promo.startDate && new Date(promo.startDate) > now) {
+        return res.status(400).json({ success: false, message: 'Mã giảm giá chưa đến thời gian áp dụng' });
+      }
+      if (promo.endDate && new Date(promo.endDate) < now) {
+        return res.status(400).json({ success: false, message: 'Mã giảm giá đã hết hạn sử dụng' });
+      }
+
+      // 2. Kiểm tra Giá trị Đơn tối thiểu
+      if (promo.minOrderValue > 0 && totalAmount < promo.minOrderValue) {
+        return res.status(400).json({ success: false, message: `Đơn hàng tối thiểu để áp mã này là ${promo.minOrderValue.toLocaleString('vi-VN')}đ` });
+      }
+
+      // 3. Kiểm tra Giới hạn lượt dùng (Toàn hệ thống)
+      if (promo.totalUsageLimit > 0 && promo.totalUsed >= promo.totalUsageLimit) {
+        return res.status(400).json({ success: false, message: 'Mã giảm giá này đã hết lượt sử dụng' });
+      }
+
+      // 4. Kiểm tra Giới hạn lượt dùng mỗi khách hàng (Dựa theo SĐT)
+      if (promo.maxUsagePerUser > 0) {
+        if (!customerPhone) {
+          return res.status(400).json({ success: false, message: 'Bạn cần Đăng Nhập (cung cấp SĐT) để dùng mã giảm giá này' });
+        }
+        
+        // Đếm xem SĐT này đã dùng mã này bao nhiêu lần trong các đơn hàng hợp lệ
+        const usageCount = await ShopOrder.countDocuments({
+          customerPhone,
+          discountCode: promo.code,
+          status: { $ne: 'CANCELLED' } // Không tính các đơn đã hủy
+        });
+
+        if (usageCount >= promo.maxUsagePerUser) {
+          return res.status(400).json({ success: false, message: `Bạn đã dùng quá số lần quy định cho mã này (${promo.maxUsagePerUser} lần)` });
+        }
       }
 
       let discountAmount = 0;
