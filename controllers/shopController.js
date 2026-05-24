@@ -172,7 +172,7 @@ const shopController = {
       // Nâng cấp: Cập nhật lượt sử dụng mã giảm giá
       if (discountCode) {
         await ShopPromo.findOneAndUpdate(
-          { code: discountCode },
+          { code: { $regex: new RegExp(`^${discountCode}$`, 'i') } },
           { $inc: { totalUsed: 1 } }
         );
       }
@@ -332,7 +332,10 @@ const shopController = {
       const { code, totalAmount, customerPhone } = req.body;
       if (!code) return res.status(400).json({ success: false, message: 'Vui lòng nhập mã giảm giá' });
 
-      const promo = await ShopPromo.findOne({ code, isActive: true });
+      const promo = await ShopPromo.findOne({ 
+        code: { $regex: new RegExp(`^${code}$`, 'i') }, 
+        isActive: true 
+      });
       if (!promo) {
         return res.status(404).json({ success: false, message: 'Mã giảm giá không tồn tại hoặc đã bị khóa' });
       }
