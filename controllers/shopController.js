@@ -166,6 +166,7 @@ const shopController = {
         customer.totalOrders += 1;
         customer.totalSpent += calculatedTotalAmount;
         if (req.body.deliveryAddress) customer.address = req.body.deliveryAddress;
+      }
       await customer.save();
 
       // Nâng cấp: Cập nhật lượt sử dụng mã giảm giá
