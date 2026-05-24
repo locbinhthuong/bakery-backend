@@ -5,6 +5,7 @@ const shopProductSchema = new mongoose.Schema({
   description: { type: String, default: '' },
   price: { type: Number, required: true },
   image: { type: String, default: '' },
+  images: [{ type: String }],
   category: { type: String, default: 'Bánh ngọt' },
   isActive: { type: Boolean, default: true },
   isBestSeller: { type: Boolean, default: false }
