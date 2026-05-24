@@ -132,26 +132,22 @@ const shopController = {
     try {
       const {
         customerName, customerPhone, deliveryAddress, note, items,
-        subTotal, discountCode, discountAmount, totalAmount, customerLocation
+        subTotal, discountCode, discountAmount, totalAmount, customerLocation,
+        shippingFee, distanceKm
       } = req.body;
 
-      // Calculate Shipping Fee if customerLocation is provided
-      let finalShippingFee = 0;
-      let finalDistanceKm = 0;
-      
+      const safeShippingFee = shippingFee || 0;
+      const safeDistanceKm = distanceKm || 0;
 
-      // Phí ship sẽ do AloShipp tính và báo sau. App bán bánh không thu phí ship.
-      // Chúng ta tin tưởng AloShipp sẽ từ chối đơn nếu quá xa.
-
-      const calculatedTotalAmount = (subTotal || totalAmount) - (discountAmount || 0);
+      const calculatedTotalAmount = (subTotal || totalAmount) - (discountAmount || 0) + safeShippingFee;
 
       const order = new ShopOrder({
         customerName, customerPhone, deliveryAddress, note, items,
         customerLocation,
         subTotal: subTotal || totalAmount, 
         discountCode, discountAmount, 
-        shippingFee: finalShippingFee,
-        distanceKm: finalDistanceKm,
+        shippingFee: safeShippingFee,
+        distanceKm: safeDistanceKm,
         totalAmount: calculatedTotalAmount
       });
       await order.save();
