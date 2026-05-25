@@ -4,6 +4,7 @@ const shopPromoSchema = new mongoose.Schema({
   title: { type: String, default: '' },
   content: { type: String, default: '' },
   image: { type: String },
+  images: [{ type: String }],
   code: { type: String, default: '' },
   postType: { type: String, enum: ['ADS', 'NEWS', 'EVENT', 'VOUCHER'], default: 'VOUCHER' },
   discountType: { type: String, enum: ['PERCENT', 'FIXED', 'NONE'], default: 'NONE' },
