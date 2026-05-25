@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 
 const shopPromoSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  content: { type: String, required: true },
+  title: { type: String, default: '' },
+  content: { type: String, default: '' },
   image: { type: String },
   code: { type: String, default: '' },
   postType: { type: String, enum: ['ADS', 'NEWS', 'EVENT', 'VOUCHER'], default: 'VOUCHER' },
