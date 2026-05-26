@@ -11,6 +11,9 @@ const shopCustomerSchema = new mongoose.Schema({
   }, // Tọa độ GPS
   totalOrders: { type: Number, default: 0 },
   totalSpent: { type: Number, default: 0 },
+  points: { type: Number, default: 0 }, // Điểm hiện tại dùng để đổi quà
+  totalPoints: { type: Number, default: 0 }, // Tổng điểm tích lũy dùng để tính Hạng
+  savedVouchers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ShopPromo' }], // Các mã giảm giá khách đã lưu hoặc đổi được
   isBlocked: { type: Boolean, default: false }
 }, { timestamps: true });
 

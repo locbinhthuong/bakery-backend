@@ -293,11 +293,25 @@ const shopController = {
         return res.status(400).json({ success: false, message: 'Thiếu thông tin' });
       }
 
-      const order = await ShopOrder.findOneAndUpdate(
-        { aloShippOrderId },
-        { status },
-        { new: true }
-      );
+      const order = await ShopOrder.findOne({ aloShippOrderId });
+      if (!order) return res.status(404).json({ success: false, message: 'Không tìm thấy đơn' });
+
+      // Nếu trạng thái chuyển thành COMPLETED (và trước đó chưa COMPLETED)
+      if (status === 'COMPLETED' && order.status !== 'COMPLETED') {
+        const settings = await ShopSettings.findOne() || new ShopSettings();
+        const conversionRate = settings.pointsConversionRate || 1000;
+        const gainedPoints = Math.floor(order.totalAmount / conversionRate);
+        
+        const customer = await ShopCustomer.findOne({ phone: order.customerPhone });
+        if (customer) {
+          customer.points = (customer.points || 0) + gainedPoints;
+          customer.totalPoints = (customer.totalPoints || 0) + gainedPoints;
+          await customer.save();
+        }
+      }
+
+      order.status = status;
+      await order.save();
 
       res.json({ success: true, message: 'Đã cập nhật trạng thái', data: order });
     } catch (error) {
@@ -352,6 +366,20 @@ const shopController = {
         return res.status(400).json({ success: false, message: 'Chỉ hỗ trợ hoàn thành tay cho đơn ĐẾN LẤY' });
       }
       
+      // Nếu trạng thái chuyển thành COMPLETED (và trước đó chưa COMPLETED)
+      if (order.status !== 'COMPLETED') {
+        const settings = await ShopSettings.findOne() || new ShopSettings();
+        const conversionRate = settings.pointsConversionRate || 1000;
+        const gainedPoints = Math.floor(order.totalAmount / conversionRate);
+        
+        const customer = await ShopCustomer.findOne({ phone: order.customerPhone });
+        if (customer) {
+          customer.points = (customer.points || 0) + gainedPoints;
+          customer.totalPoints = (customer.totalPoints || 0) + gainedPoints;
+          await customer.save();
+        }
+      }
+
       order.status = 'COMPLETED';
       await order.save();
       return res.json({ success: true, message: 'Đã giao bánh cho khách thành công', data: order });
@@ -487,6 +515,38 @@ const shopController = {
           title: promo.title
         }
       });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  // Đổi điểm lấy mã giảm giá
+  redeemPromo: async (req, res) => {
+    try {
+      const { promoId } = req.body;
+      const customerId = req.user.id; // from verifyToken
+
+      const promo = await ShopPromo.findById(promoId);
+      if (!promo) return res.status(404).json({ success: false, message: 'Không tìm thấy ưu đãi' });
+      if (promo.pointsCost <= 0) return res.status(400).json({ success: false, message: 'Ưu đãi này không thể đổi bằng điểm' });
+
+      const customer = await ShopCustomer.findById(customerId);
+      if (!customer) return res.status(404).json({ success: false, message: 'Không tìm thấy tài khoản' });
+
+      if (customer.points < promo.pointsCost) {
+        return res.status(400).json({ success: false, message: 'Bạn không đủ điểm để đổi ưu đãi này' });
+      }
+
+      if (customer.savedVouchers.includes(promoId)) {
+        return res.status(400).json({ success: false, message: 'Bạn đã đổi mã này rồi' });
+      }
+
+      // Trừ điểm và thêm mã vào giỏ
+      customer.points -= promo.pointsCost;
+      customer.savedVouchers.push(promoId);
+      await customer.save();
+
+      res.json({ success: true, message: 'Đổi mã thành công!', data: customer });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }

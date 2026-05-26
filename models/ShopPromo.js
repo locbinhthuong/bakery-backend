@@ -17,7 +17,8 @@ const shopPromoSchema = new mongoose.Schema({
   totalUsed: { type: Number, default: 0 },
   minOrderValue: { type: Number, default: 0 },
   startDate: { type: Date, default: null },
-  endDate: { type: Date, default: null }
+  endDate: { type: Date, default: null },
+  pointsCost: { type: Number, default: 0 } // Số điểm cần để đổi mã này (0 = miễn phí)
 }, { timestamps: true });
 
 module.exports = mongoose.model('ShopPromo', shopPromoSchema);
