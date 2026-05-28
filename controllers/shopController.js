@@ -454,7 +454,7 @@ const shopController = {
 
   validatePromo: async (req, res) => {
     try {
-      const { code, totalAmount, customerPhone } = req.body;
+      const { code, totalAmount, shippingFee = 0, customerPhone } = req.body;
       if (!code) return res.status(400).json({ success: false, message: 'Vui lòng nhập mã giảm giá' });
 
       const promo = await ShopPromo.findOne({ 
@@ -509,6 +509,10 @@ const shopController = {
       } else if (promo.discountType === 'FIXED') {
         discountAmount = promo.discountValue;
         if (discountAmount > totalAmount) discountAmount = totalAmount;
+      } else if (promo.discountType === 'PERCENT_SHIPPING') {
+        discountAmount = (shippingFee * promo.discountValue) / 100;
+      } else if (promo.discountType === 'FIXED_SHIPPING') {
+        discountAmount = promo.discountValue;
       } else if (promo.discountType === 'FREESHIP') {
         // FREESHIP value is either max freeship amount or unlimited
         discountAmount = promo.discountValue > 0 ? promo.discountValue : 999999;
