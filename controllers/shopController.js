@@ -498,20 +498,23 @@ const shopController = {
       let discountAmount = 0;
       if (promo.discountType === 'PERCENT') {
         discountAmount = (totalAmount * promo.discountValue) / 100;
+        if (discountAmount > totalAmount) discountAmount = totalAmount;
       } else if (promo.discountType === 'FIXED') {
         discountAmount = promo.discountValue;
+        if (discountAmount > totalAmount) discountAmount = totalAmount;
+      } else if (promo.discountType === 'FREESHIP') {
+        // FREESHIP value is either max freeship amount or unlimited
+        discountAmount = promo.discountValue > 0 ? promo.discountValue : 999999;
       } else {
         return res.status(400).json({ success: false, message: 'Mã giảm giá không hợp lệ' });
       }
-
-      // Không giảm giá vượt quá tổng tiền
-      if (discountAmount > totalAmount) discountAmount = totalAmount;
 
       res.json({
         success: true,
         data: {
           code: promo.code,
           discountAmount,
+          discountType: promo.discountType,
           title: promo.title
         }
       });
