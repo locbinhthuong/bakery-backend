@@ -20,6 +20,8 @@ const shopOrderSchema = new mongoose.Schema({
   subTotal: { type: Number, required: true },
   discountCode: { type: String, default: '' },
   discountAmount: { type: Number, default: 0 },
+  freeshipCode: { type: String, default: '' },
+  freeshipAmount: { type: Number, default: 0 },
   shippingFee: { type: Number, default: 0 },
   distanceKm: { type: Number, default: 0 },
   totalAmount: { type: Number, required: true },

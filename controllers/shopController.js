@@ -132,7 +132,7 @@ const shopController = {
     try {
       const {
         customerName, customerPhone, deliveryAddress, note, items,
-        subTotal, discountCode, discountAmount, totalAmount, customerLocation,
+        subTotal, discountCode, discountAmount, freeshipCode, freeshipAmount, totalAmount, customerLocation,
         shippingFee, distanceKm, deliveryMethod, pickupTime
       } = req.body;
 
@@ -140,7 +140,7 @@ const shopController = {
       const safeShippingFee = isPickup ? 0 : (shippingFee || 0);
       const safeDistanceKm = isPickup ? 0 : (distanceKm || 0);
 
-      const calculatedTotalAmount = (subTotal || totalAmount) - (discountAmount || 0) + safeShippingFee;
+      const calculatedTotalAmount = (subTotal || totalAmount) - (discountAmount || 0) + safeShippingFee - (freeshipAmount || 0);
 
       // Check if blocked
       const existingCustomer = await ShopCustomer.findOne({ phone: customerPhone });
@@ -157,6 +157,7 @@ const shopController = {
         customerLocation: isPickup ? null : customerLocation,
         subTotal: subTotal || totalAmount, 
         discountCode, discountAmount, 
+        freeshipCode, freeshipAmount,
         shippingFee: safeShippingFee,
         distanceKm: safeDistanceKm,
         totalAmount: calculatedTotalAmount
@@ -184,6 +185,12 @@ const shopController = {
       if (discountCode) {
         await ShopPromo.findOneAndUpdate(
           { code: { $regex: new RegExp(`^${discountCode}$`, 'i') } },
+          { $inc: { totalUsed: 1 } }
+        );
+      }
+      if (freeshipCode) {
+        await ShopPromo.findOneAndUpdate(
+          { code: { $regex: new RegExp(`^${freeshipCode}$`, 'i') } },
           { $inc: { totalUsed: 1 } }
         );
       }
