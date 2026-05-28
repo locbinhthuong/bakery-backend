@@ -514,8 +514,7 @@ const shopController = {
       } else if (promo.discountType === 'FIXED_SHIPPING') {
         discountAmount = promo.discountValue;
       } else if (promo.discountType === 'FREESHIP') {
-        // FREESHIP value is either max freeship amount or unlimited
-        discountAmount = promo.discountValue > 0 ? promo.discountValue : 999999;
+        discountAmount = shippingFee;
       } else {
         return res.status(400).json({ success: false, message: 'Mã giảm giá không hợp lệ' });
       }
